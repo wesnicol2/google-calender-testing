@@ -36,10 +36,10 @@ def update_event(event):
                 print("Retry count: " + str(retry_count + 1))
                 if retry_count <= max_retries:
                     print("Error: " + str(e))
-                    sleep_time = 2**retry_count + random.uniform(0, 1)
-                    print("Retrying in " + str(2**retry_count) + " seconds")
-                    sleep(2**retry_count)                
-                    retry_count += 1
+                    sleep_time = 2**retry_count + random.uniform(0, 1) - 1
+                    print("Retrying in " + str(sleep_time) + " seconds")
+                    sleep(sleep_time)                
+                    retry_count += 0.1
                 else:
                     # print("Error: " + str(e))
                     # print("Exceeded maximum number of retries")
@@ -97,10 +97,22 @@ def remove_notifications(event):
         event['reminders'] = {'useDefault': True}   
         update_event(event)
 
+def notification_already_exists(event, minutes):
+    if event.get('reminders').get('useDefault') is True or event.get('reminders').get('overrides') is None:
+        return False
+    for override in event.get('reminders').get('overrides'):
+        if override.get('minutes') == minutes:
+            return True
+    return False
+
+
 def add_notification(event, minutes):
-    print(f"Adding {minutes} minute notification for event: " + event.get('summary'))
-    event['reminders'] = {'useDefault': False, 'overrides': [{'method': 'popup', 'minutes': minutes}]}
-    update_event(event)
+    if notification_already_exists(event, minutes):
+        print("Notification already exists for event: " + event.get('summary'))
+    else: 
+        print(f"Adding {minutes} minute notification for event: " + event.get('summary'))
+        event['reminders'] = {'useDefault': False, 'overrides': [{'method': 'popup', 'minutes': minutes}]}
+        update_event(event)
 
 def main():
     # Google Calendar API Reference: https://developers.google.com/calendar/api
@@ -140,16 +152,24 @@ def main():
         non_gold_medal_events = list(filter(lambda event: not bool(re.match(".*🏅.*", event.get('summary'))), olympic_events))
         bronze_medal_events = list(filter(lambda event: bool(re.match(".*🥉.*", event.get('summary'))), olympic_events))
 
-        remove_events(reair_events)
-        for event in olympic_events:
+        notification_events = list()
+        notification_events.extend(gold_medal_events)
+        notification_events.extend(usa_events)
+
+        non_notification_evetns = list()
+        non_notification_evetns.extend(list(filter(lambda event: event not in notification_events, olympic_events)))
+
+        
+        for event in non_notification_evetns:
             remove_notifications(event)
-
-        for event in usa_events:
-            add_notification(event, 10)
-
-        for event in gold_medal_events:
+        
+        for event in notification_events:
             add_notification(event, 10)
         
+        for event in gold_medal_events:
+            add_notification(event, 60 * 24)
+        remove_events(reair_events)
+
     except HttpError as error:
         print('An error occurred: %s' % error)
 
