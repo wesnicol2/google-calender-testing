@@ -35,8 +35,9 @@ def update_event(event):
             if e.reason == "Rate Limit Exceeded":
                 print("Retry count: " + str(retry_count + 1))
                 if retry_count <= max_retries:
-                    print("Error: " + str(e))
-                    sleep_time = 2**retry_count + random.uniform(0, 1) - 1
+                    sleep_time = 2**retry_count - 1
+                    if sleep_time > 0.5:
+                        sleep_time += random.uniform(0, 1)
                     print("Retrying in " + str(sleep_time) + " seconds")
                     sleep(sleep_time)                
                     retry_count += 0.1
