@@ -21,7 +21,6 @@ CREDENTIALS_DIR='credentials'
 COLORS = {}
 OLYMPIC_CALENDAR_NAME='NBC Sports'
 
-
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
@@ -135,12 +134,14 @@ def remove_events(events):
     else:
         print("No events to remove")
 
-
+# Returns true if an update is made (Meaning a call to update_event will be required to submit the changes)
 def remove_notifications(event):
-    if event.get('reminders').get('useDefault') == False:
+    if event.get('reminders').get('useDefault') == False or event.get('reminders').get('overrides') is None:
         print("Removing notifications for event: " + event.get('summary'))
         event['reminders'] = {'useDefault': True}   
-        update_event(event)
+        # update_event(event)
+        return True
+    return False
 
 def notification_already_exists(event, minutes):
     if event.get('reminders').get('useDefault') is True or event.get('reminders').get('overrides') is None:
@@ -157,57 +158,85 @@ def set_notification(event, minutes):
     else: 
         print(f"Adding {minutes} minute notification for event: " + event.get('summary'))
         event['reminders'] = {'useDefault': False, 'overrides': [{'method': 'popup', 'minutes': minutes}]}
-        update_event(event)
+        # update_event(event)
+        return True
+    return False
 
+# Returns true if an update is made (Meaning a call to update_event will be required to submit the changes)
+def add_notifications(event, minutes_list):
+    update_made = False
+    if type(minutes_list) is int or type(minutes_list) is str:
+        minutes_list = [minutes_list]
+    
+    minutes_set = set(minutes_list)
+    for minutes in minutes_set:
+        if notification_already_exists(event, minutes):
+            print("Notification already exists for event: " + event.get('summary'))
+        else:
+            print(f"Adding {minutes} minute notification for event: " + event.get('summary'))
+            if event.get('reminders').get('overrides') is None or len(event.get('reminders').get('overrides')) == 0:
+                set_notification(event, minutes)
+            else:
+                event.get('reminders').get('overrides').append({'method': 'popup', 'minutes': minutes})
+            # update_event(event)
+            update_made = True
+    return update_made
 
+# Returns true if an update is made (Meaning a call to update_event will be required to submit the changes)
 def set_color(event, color):
-
     if color not in COLORS.keys():
-        print("Invalid color: " + color)
-        return
-    if event.get('colorId') == color:
-        print(f"Color already set for event: {event.get('summary')}")
+        print(f"Invalid color: {color}")
+    elif event.get('colorId') == COLORS[color]:
+        print(f"Color already set to {color} for event: {event.get('summary')}")
     else:
         print(f"Setting {color} color for event: {event.get('summary')}")
         event['colorId'] = COLORS[color]
-        update_event(event)
+        # update_event(event)
+        return True
+    return False
 
 
 def execute_updates(olympics_calendar):
+    events_to_be_updated = set([])
     # TODO: Add events_to_be_updated set here, this set will be appended with all events that are to be updated
     olympic_events = get_events_from_calendar(olympics_calendar)
     reair_events = list(filter( lambda event: 'Re-Air' in event.get('summary') or 're-air' in event.get('summary') or 'Re-air' in event.get('summary'), olympic_events))
     # remove reair_events from olympic_events
-    for event in reair_events:
-        olympic_events.remove(event)
-    usa_events = list(filter(lambda event: bool(re.match(".*USA.*", event.get('summary'))), olympic_events))
-    gold_medal_events = list(filter(lambda event: bool(re.match(".*🏅.*", event.get('summary'))), olympic_events))
-    non_gold_medal_events = list(filter(lambda event: not bool(re.match(".*🏅.*", event.get('summary'))), olympic_events))
-    bronze_medal_events = list(filter(lambda event: bool(re.match(".*🥉.*", event.get('summary'))), olympic_events))
-    notification_events = list()
-    notification_events.extend(gold_medal_events)
-    notification_events.extend(usa_events)
-    non_notification_evetns = list()
-    non_notification_evetns.extend(list(filter(lambda event: event not in notification_events, olympic_events)))
-    
-    for event in non_notification_evetns:
-        remove_notifications(event)
-        set_color(event, 'gray')
-        
-    for event in usa_events:
-        set_color(event, 'red')
-
-    for event in notification_events:
-        set_notification(event, 10)
-    
-    for event in gold_medal_events:
-        set_notification(event, 60 * 24)
-        set_color(event, 'yellow')
-
-    # for event in events_to_be_updated:
-    #     update_event(event)
-
+    olympic_events = [event for event in olympic_events if event not in reair_events]
     remove_events(reair_events)
+
+    for event in olympic_events:
+        # Set all events to least importance. Notifications and color will be added to specific events with if statements
+        # TODO: Figure out how to remove notifications from everything but what has notifications added so that all those with notifications will not be marked for update if they start with notifications
+        if remove_notifications(event):
+
+            events_to_be_updated.add(event.get('id'))
+
+        if set_color(event, 'gray'):
+            events_to_be_updated.add(event.get('id'))
+
+        if bool(re.match(".*USA.*", event.get('summary'))):
+            # USA Events
+            if set_color(event, 'red'):
+                events_to_be_updated.add(event.get('id'))
+
+            if add_notifications(event, 5):
+                events_to_be_updated.add(event.get('id'))
+
+
+        if bool(re.match(".*🏅.*", event.get('summary'))):
+            # Gold Medal Events
+            if set_color(event, 'yellow'):
+                events_to_be_updated.add(event.get('id'))
+
+            if add_notifications(event, [5, 60*24]):
+                events_to_be_updated.add(event.get('id'))
+
+
+    for event in olympic_events:
+        if event.get('id') in events_to_be_updated:
+            update_event(event)
+    
 
 
 def main():
