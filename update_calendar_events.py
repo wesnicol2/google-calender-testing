@@ -1,13 +1,11 @@
 from __future__ import print_function
-from audioop import add
 from time import sleep
 import math
 import random
 import re
 import datetime
 import os.path
-from pprint import pprint
-from enum import Enum
+import copy
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -27,17 +25,17 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 def initialize_colors():
     # Reference this page: https://lukeboyle.com/blog/posts/google-calendar-api-color-id
     global COLORS
-    COLORS['light purple'] = 1
-    COLORS['light green'] = 2
-    COLORS['purple'] = 3
-    COLORS['pink'] = 4
-    COLORS['yellow'] = 5
-    COLORS['orange'] = 6
-    COLORS['light blue'] = 7
-    COLORS['gray'] = 8
-    COLORS['dark blue'] = 9
-    COLORS['green'] = 10
-    COLORS['red'] = 11
+    COLORS['light purple'] = '1'
+    COLORS['light green'] = '2'
+    COLORS['purple'] = '3'
+    COLORS['pink'] = '4'
+    COLORS['yellow'] = '5'
+    COLORS['orange'] = '6'
+    COLORS['light blue'] = '7'
+    COLORS['gray'] = '8'
+    COLORS['dark blue'] = '9'
+    COLORS['green'] = '10'
+    COLORS['red'] = '11'
 
 def setup():
     global service
@@ -136,7 +134,7 @@ def remove_events(events):
 
 # Returns true if an update is made (Meaning a call to update_event will be required to submit the changes)
 def remove_notifications(event):
-    if event.get('reminders').get('useDefault') == False or event.get('reminders').get('overrides') is None:
+    if event.get('reminders').get('useDefault') == False:
         print("Removing notifications for event: " + event.get('summary'))
         event['reminders'] = {'useDefault': True}   
         # update_event(event)
@@ -156,7 +154,7 @@ def set_notification(event, minutes):
     if notification_already_exists(event, minutes):
         print("Notification already exists for event: " + event.get('summary'))
     else: 
-        print(f"Adding {minutes} minute notification for event: " + event.get('summary'))
+        print(f"Setting {minutes} minute notification for event: " + event.get('summary'))
         event['reminders'] = {'useDefault': False, 'overrides': [{'method': 'popup', 'minutes': minutes}]}
         # update_event(event)
         return True
@@ -190,53 +188,78 @@ def set_color(event, color):
         print(f"Color already set to {color} for event: {event.get('summary')}")
     else:
         print(f"Setting {color} color for event: {event.get('summary')}")
-        event['colorId'] = COLORS[color]
+        event['colorId'] = str(COLORS[color])
         # update_event(event)
         return True
     return False
 
+# Returns true if events are effectivly the same. Add any comprisons that should be included in that determination here
+def events_are_equal(event1, event2):
+    if str(event1.get('id')) != str(event2.get('id')):
+        return False
+
+    if str(event1.get('summary')) != str(event2.get('summary')):
+        return False
+
+    if str(event1.get('start').get('dateTime')) != str(event2.get('start').get('dateTime')):
+        return False
+
+    if str(event1.get('end').get('dateTime')) != str(event2.get('end').get('dateTime')):
+        return False
+
+    if event1.get('location') != event2.get('location'):
+        return False
+
+    if str(event1.get('description')) != str(event2.get('description')):
+        return False
+
+    if event1.get('reminders') != event2.get('reminders'):
+        return False
+
+    if str(event1.get('colorId')) != str(event2.get('colorId')):
+        return False
+
+    return True
+
 
 def execute_updates(olympics_calendar):
-    events_to_be_updated = set([])
-    # TODO: Add events_to_be_updated set here, this set will be appended with all events that are to be updated
     olympic_events = get_events_from_calendar(olympics_calendar)
     reair_events = list(filter( lambda event: 'Re-Air' in event.get('summary') or 're-air' in event.get('summary') or 'Re-air' in event.get('summary'), olympic_events))
     # remove reair_events from olympic_events
     olympic_events = [event for event in olympic_events if event not in reair_events]
     remove_events(reair_events)
 
+    original_olympic_events = copy.deepcopy(olympic_events)
+
+    usa_count = 0
     for event in olympic_events:
         # Set all events to least importance. Notifications and color will be added to specific events with if statements
         # TODO: Figure out how to remove notifications from everything but what has notifications added so that all those with notifications will not be marked for update if they start with notifications
-        if remove_notifications(event):
-
-            events_to_be_updated.add(event.get('id'))
-
-        if set_color(event, 'gray'):
-            events_to_be_updated.add(event.get('id'))
+        remove_notifications(event)
+        set_color(event, 'gray')
 
         if bool(re.match(".*USA.*", event.get('summary'))):
             # USA Events
-            if set_color(event, 'red'):
-                events_to_be_updated.add(event.get('id'))
-
-            if add_notifications(event, 5):
-                events_to_be_updated.add(event.get('id'))
-
+            usa_count += 1
+            set_color(event, 'light blue')
+            add_notifications(event, 5)
 
         if bool(re.match(".*🏅.*", event.get('summary'))):
             # Gold Medal Events
-            if set_color(event, 'yellow'):
-                events_to_be_updated.add(event.get('id'))
+            set_color(event, 'yellow')
+            add_notifications(event, [5, 60*24])
 
-            if add_notifications(event, [5, 60*24]):
-                events_to_be_updated.add(event.get('id'))
-
-
+    updated_events_count = 0
     for event in olympic_events:
-        if event.get('id') in events_to_be_updated:
+        original_event = next(original_event for original_event in original_olympic_events if original_event.get('id') == event.get('id'))
+        if events_are_equal(event, original_event):
+            print("Event already up to date: " + event.get('summary'))
+        else: 
             update_event(event)
+            updated_events_count += 1
     
+    print("Events updated: " + str(updated_events_count))
+    print("USA Events: " + str(usa_count))
 
 
 def main():
