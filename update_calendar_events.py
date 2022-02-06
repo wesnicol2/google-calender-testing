@@ -6,6 +6,7 @@ import re
 import datetime
 import os.path
 import copy
+import json
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -18,6 +19,8 @@ service=None
 CREDENTIALS_DIR='credentials'
 COLORS = {}
 OLYMPIC_CALENDAR_NAME='NBC Sports'
+STD_NOTIFICATION_TIME = 5
+ONE_DAY_NOTIFICATION_TIME = 1440
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -193,6 +196,34 @@ def set_color(event, color):
         return True
     return False
 
+
+def event_reminders_are_equal(event1, event2):
+    if event1.get('reminders') == event2.get('reminders'):
+        return True
+
+    # Make sure use default is equal
+    if event1.get('reminders').get('useDefault') != event2.get('reminders').get('useDefault'):
+        return False
+
+    if event1.get('reminders').get('useDefault') is True:
+        return True
+
+    # Make sure overrides are effectivly equal
+    overrides_set_1 = set()
+    for override in event1.get('reminders').get('overrides'):
+        overrides_set_1.add(json.dumps(override, sort_keys=True))
+
+
+    overrides_set_2 = set()
+    for override in event2.get('reminders').get('overrides'):
+        overrides_set_2.add(json.dumps(override, sort_keys=True))
+
+    if overrides_set_1 != overrides_set_2:
+        return False
+
+    return True
+  
+
 # Returns true if events are effectivly the same. Add any comprisons that should be included in that determination here
 def events_are_equal(event1, event2):
     if str(event1.get('id')) != str(event2.get('id')):
@@ -213,7 +244,7 @@ def events_are_equal(event1, event2):
     if str(event1.get('description')) != str(event2.get('description')):
         return False
 
-    if event1.get('reminders') != event2.get('reminders'):
+    if not event_reminders_are_equal(event1, event2):
         return False
 
     if str(event1.get('colorId')) != str(event2.get('colorId')):
@@ -238,16 +269,18 @@ def execute_updates(olympics_calendar):
         remove_notifications(event)
         set_color(event, 'gray')
 
+        
+
         if bool(re.match(".*USA.*", event.get('summary'))):
             # USA Events
             usa_count += 1
             set_color(event, 'light blue')
-            add_notifications(event, 5)
+            add_notifications(event, STD_NOTIFICATION_TIME)
 
         if bool(re.match(".*🏅.*", event.get('summary'))):
             # Gold Medal Events
             set_color(event, 'yellow')
-            add_notifications(event, [5, 60*24])
+            add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
 
     updated_events_count = 0
     for event in olympic_events:
