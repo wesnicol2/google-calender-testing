@@ -20,7 +20,7 @@ from googleapiclient.errors import HttpError
 
 OLYMPIC_CALENDAR_ID = 'icn02kf62d26hurpro3qksjhjc@group.calendar.google.com'
 service=None
-CREDENTIALS_DIR='credentials' # TODO: figure out how to make this credentials directory generic if calling this script from somewhere other than script dir
+CREDENTIALS_DIR='./credentials' # TODO: figure out how to make this credentials directory generic if calling this script from somewhere other than script dir
 COLORS = {}
 OLYMPIC_CALENDAR_NAME='NBC Sports'
 STD_NOTIFICATION_TIME = 5
