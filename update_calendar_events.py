@@ -303,15 +303,20 @@ def execute_updates(olympics_calendar):
             set_color(event, 'gray')
             remove_notifications(event)
 
-    updated_events_count = 0
+    events_to_update = []
     for event in olympic_events:
         original_event = next(original_event for original_event in original_olympic_events if original_event.get('id') == event.get('id'))
         if events_are_equal(event, original_event):
             print("Event already up to date: " + event.get('summary'))
         else: 
-            update_event(event)
-            updated_events_count += 1
-    
+            events_to_update.append(event)
+
+    updated_events_count = 0
+    for event in events_to_update:
+        print("Events left to update: " + str(len(events_to_update) - updated_events_count))
+        update_event(event)
+        updated_events_count += 1
+        
     print("Events updated: " + str(updated_events_count))
 
 
