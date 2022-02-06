@@ -96,13 +96,12 @@ def print_calendar_info(calendar):
     print("Calendar: " + calendar.get('summary') + " (" + calendar.get('id') + ")")
 
 
-def get_events_from_calendar(calendar):
+def get_events_from_calendar(calendar, start_date=datetime.datetime(2022, 2, 1)):
     id = calendar.get('id')
     print("Getting events from calendar:")
     print_calendar_info(calendar)
-
-    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-    events_result = service.events().list(calendarId=id, timeMin=now,
+    start_date = start_date.isoformat() + 'Z'  # 'Z' indicates UTC time
+    events_result = service.events().list(calendarId=id, timeMin=start_date,
                                             maxResults=999, singleEvents=True,
                                             orderBy='startTime').execute()
     events = events_result.get('items', [])
@@ -255,11 +254,7 @@ def events_are_equal(event1, event2):
 
 def execute_updates(olympics_calendar):
     olympic_events = get_events_from_calendar(olympics_calendar)
-    # remove reair_events from olympic_events
-    reair_events = list(filter( lambda event: 'Re-Air' in event.get('summary') or 're-air' in event.get('summary') or 'Re-air' in event.get('summary'), olympic_events))
-    olympic_events = [event for event in olympic_events if event not in reair_events]
-    remove_events(reair_events)
-
+    olympic_events = delete_unwanted_events(olympic_events)
     original_olympic_events = copy.deepcopy(olympic_events)
 
     for event in olympic_events:
@@ -318,6 +313,19 @@ def execute_updates(olympics_calendar):
         updated_events_count += 1
         
     print("Events updated: " + str(updated_events_count))
+
+def delete_unwanted_events(olympic_events):
+    events_to_delete = list(filter( lambda event: 
+        'Re-Air' in event.get('summary') or 
+        're-air' in event.get('summary') or 
+        'Re-air' in event.get('summary') or
+        re.match(".*Success! You're connected to NBC Olympics.*", event.get('summary')) or
+        re.match(".*The 2022 Olympic Winter Games are here!️.*", event.get('summary')), 
+    olympic_events))
+    
+    olympic_events = [event for event in olympic_events if event not in events_to_delete]
+    remove_events(events_to_delete)
+    return olympic_events
 
 
 def main():
