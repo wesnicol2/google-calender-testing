@@ -27,7 +27,7 @@ STD_NOTIFICATION_TIME = 5
 ONE_DAY_NOTIFICATION_TIME = 1440
 LOG_DATE_FORMAT = '%Y_%m_%d_%H_%M_%S'
 LOG_DIR='./logs'
-LOG_FILENAME = "update_calendar_events_" + datetime.datetime.now().strftime(LOG_DATE_FORMAT) + ".log"
+LOG_FILENAME = "update_calendar_events_" + datetime.datetime.now().strftime(LOG_DATE_FORMAT) + ".log" # TODO: Rename this log file after processing, prepend it with the number of events that were updated
 
 
 # If modifying these scopes, delete the file token.json.
