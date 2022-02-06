@@ -255,25 +255,21 @@ def events_are_equal(event1, event2):
 
 def execute_updates(olympics_calendar):
     olympic_events = get_events_from_calendar(olympics_calendar)
-    reair_events = list(filter( lambda event: 'Re-Air' in event.get('summary') or 're-air' in event.get('summary') or 'Re-air' in event.get('summary'), olympic_events))
     # remove reair_events from olympic_events
+    reair_events = list(filter( lambda event: 'Re-Air' in event.get('summary') or 're-air' in event.get('summary') or 'Re-air' in event.get('summary'), olympic_events))
     olympic_events = [event for event in olympic_events if event not in reair_events]
     remove_events(reair_events)
 
     original_olympic_events = copy.deepcopy(olympic_events)
 
-    usa_count = 0
     for event in olympic_events:
         # Set all events to least importance. Notifications and color will be added to specific events with if statements
         # TODO: Figure out how to remove notifications from everything but what has notifications added so that all those with notifications will not be marked for update if they start with notifications
         remove_notifications(event)
         set_color(event, 'gray')
 
-        
-
         if bool(re.match(".*USA.*", event.get('summary'))):
             # USA Events
-            usa_count += 1
             set_color(event, 'light blue')
             add_notifications(event, STD_NOTIFICATION_TIME)
 
@@ -292,7 +288,6 @@ def execute_updates(olympics_calendar):
             updated_events_count += 1
     
     print("Events updated: " + str(updated_events_count))
-    print("USA Events: " + str(usa_count))
 
 
 def main():
