@@ -8,6 +8,9 @@ import os.path
 import copy
 import json
 import logging
+import sys
+import codecs
+sys.stdout = codecs.getwriter('utf8')(sys.stdout) # To support unicode characters on windows
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -54,9 +57,12 @@ def setup_logging(log_filepath=LOG_DIR+'/'+LOG_FILENAME):
     logging.basicConfig(
         level=logging.INFO,
         encoding='utf-8',
-        filename=log_filepath,
         format='%(asctime)s [%(levelname)s]: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[
+            logging.FileHandler(log_filepath),
+            logging.StreamHandler(sys.stdout)
+        ]
     )
 
 
