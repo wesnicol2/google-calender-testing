@@ -268,13 +268,37 @@ def execute_updates(olympics_calendar):
         remove_notifications(event)
         set_color(event, 'gray')
 
+        # USA Events
         if bool(re.match(".*USA.*", event.get('summary'))):
-            # USA Events
             set_color(event, 'light blue')
             add_notifications(event, STD_NOTIFICATION_TIME)
 
+        # Hockey events 
+        if bool(re.match(".*Hockey.*", event.get('summary'))):
+            set_color(event, 'gray')
+            remove_notifications(event)
+
+        # Curling events
+        if bool(re.match(".*Curling.*", event.get('summary'))):
+            # USA Curling matches
+            if bool(re.match(".*USA.*", event.get('summary'))):
+                add_notifications(event, [ONE_DAY_NOTIFICATION_TIME, 30])
+
+            # Non-Round Robin Curling matches
+            if not bool(re.match(".*(?i)(Round Robin).*", event.get('summary'))):
+                set_color(event, 'dark blue')
+                add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
+
+        # Snowboarding events
+        if bool(re.match(".*Snowboarding.*", event.get('summary'))):
+            set_color(event, 'green')
+
+        # Skiiing events
+        if bool(re.match("(?i)(.*Skiing.*|.*Super-G.*|.*Downhill.*|.*Alpine.*)", event.get('summary'))) or bool(re.match(".*Super G.*", event.get('summary'))):
+            set_color(event, 'green')
+            add_notifications(event, [STD_NOTIFICATION_TIME])
+        # Gold Medal Events
         if bool(re.match(".*🏅.*", event.get('summary'))):
-            # Gold Medal Events
             set_color(event, 'yellow')
             add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
 
