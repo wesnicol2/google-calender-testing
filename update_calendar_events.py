@@ -303,7 +303,7 @@ def execute_updates(olympics_calendar):
                 add_notifications(event, [ONE_DAY_NOTIFICATION_TIME, 30])
 
             # Non-Round Robin Curling matches
-            if not bool(re.match(".*(?i)(Round Robin).*", event.get('summary'))):
+            if not bool(re.match("(?i)(.*Round Robin.*)", event.get('summary'))):
                 set_color(event, 'dark blue')
                 add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
 
