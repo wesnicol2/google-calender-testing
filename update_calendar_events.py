@@ -376,7 +376,7 @@ def main():
         
 
     except HttpError as error:
-        logging.error('An error occurred: %s' % error)
+        logging.info('An error occurred: %s' % error)
 
 
 if __name__ == '__main__':
