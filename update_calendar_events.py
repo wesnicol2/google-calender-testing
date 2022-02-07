@@ -7,6 +7,10 @@ import datetime
 import os.path
 import copy
 import json
+import logging
+import sys
+import codecs
+sys.stdout = codecs.getwriter('utf8')(sys.stdout) # To support unicode characters on windows
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -16,11 +20,15 @@ from googleapiclient.errors import HttpError
 
 OLYMPIC_CALENDAR_ID = 'icn02kf62d26hurpro3qksjhjc@group.calendar.google.com'
 service=None
-CREDENTIALS_DIR='credentials'
+CREDENTIALS_DIR='./credentials' # TODO: figure out how to make this credentials directory generic if calling this script from somewhere other than script dir
 COLORS = {}
 OLYMPIC_CALENDAR_NAME='NBC Sports'
 STD_NOTIFICATION_TIME = 5
 ONE_DAY_NOTIFICATION_TIME = 1440
+LOG_DATE_FORMAT = '%Y_%m_%d_%H_%M_%S'
+LOG_DIR='./logs'
+LOG_FILENAME = "update_calendar_events_" + datetime.datetime.now().strftime(LOG_DATE_FORMAT) + ".log" # TODO: Rename this log file after processing, prepend it with the number of events that were updated
+
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -40,8 +48,28 @@ def initialize_colors():
     COLORS['green'] = '10'
     COLORS['red'] = '11'
 
+
+def setup_logging(log_filepath=LOG_DIR+'/'+LOG_FILENAME):
+    # Create log path if it doesn't exist
+    if not os.path.exists(os.path.dirname(log_filepath)):
+        os.makedirs(os.path.dirname(log_filepath))
+
+    logging.basicConfig(
+        level=logging.INFO,
+        encoding='utf-8',
+        format='%(asctime)s [%(levelname)s]: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[
+            logging.FileHandler(log_filepath),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+
+
 def setup():
     global service
+    setup_logging()
+    logging.info("Setting up Google Calendar API")
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -61,10 +89,11 @@ def setup():
             token.write(creds.to_json())
     service = build('calendar', 'v3', credentials=creds)
     initialize_colors()
+    logging.info("Setup complete")
 
 
 def update_event(event):
-    print("Updating event: " + event.get('summary'))
+    logging.info("Updating event: " + event.get('summary'))
     # Implelmentation of exponential backoff; Ref: https://cloud.google.com/storage/docs/retry-strategy#exponential-backoff
     max_retry_time = 60
     rate = 10
@@ -76,29 +105,29 @@ def update_event(event):
             service.events().update(calendarId=OLYMPIC_CALENDAR_ID, eventId=event['id'], body=event).execute()
         except HttpError as e:
             if e.reason == "Rate Limit Exceeded":
-                print("Retry count: " + str(progress * rate))
+                logging.info("Retry count: " + str(progress * rate))
                 if progress <= max_retries:
                     sleep_time = 2**progress - 1
                     if sleep_time > 0.5:
                         sleep_time += random.uniform(0, 1)
-                    print("Retrying in " + str(sleep_time) + " seconds")
+                    logging.info("Retrying in " + str(sleep_time) + " seconds")
                     sleep(sleep_time)                
                 else:
-                    # print("Error: " + str(e))
-                    # print("Exceeded maximum number of retries")
+                    # logging.info("Error: " + str(e))
+                    # logging.info("Exceeded maximum number of retries")
                     raise e
             progress += progress_increment
             
         break
-    print("Event updated successfully")
+    logging.info("Event updated successfully")
 
 def print_calendar_info(calendar):
-    print("Calendar: " + calendar.get('summary') + " (" + calendar.get('id') + ")")
+    logging.info("Calendar: " + calendar.get('summary') + " (" + calendar.get('id') + ")")
 
 
 def get_events_from_calendar(calendar, start_date=datetime.datetime(2022, 2, 1)):
     id = calendar.get('id')
-    print("Getting events from calendar:")
+    logging.info("Getting events from calendar:")
     print_calendar_info(calendar)
     start_date = start_date.isoformat() + 'Z'  # 'Z' indicates UTC time
     events_result = service.events().list(calendarId=id, timeMin=start_date,
@@ -130,14 +159,14 @@ def remove_events(events):
             user_input = input("Would you like to remove event: " + event.get('summary') + "? (y/n)")
             if user_input =='y' or user_input == 'Y':
                 service.events().delete(calendarId=OLYMPIC_CALENDAR_ID, eventId=event.get('id')).execute()
-                print("Removed event: " + event.get('summary'))
+                logging.info("Removed event: " + event.get('summary'))
     else:
-        print("No events to remove")
+        logging.info("No events to remove")
 
 # Returns true if an update is made (Meaning a call to update_event will be required to submit the changes)
 def remove_notifications(event):
     if event.get('reminders').get('useDefault') == False:
-        print("Removing notifications for event: " + event.get('summary'))
+        logging.info("Removing notifications for event: " + event.get('summary'))
         event['reminders'] = {'useDefault': True}   
         # update_event(event)
         return True
@@ -154,9 +183,9 @@ def notification_already_exists(event, minutes):
 
 def set_notification(event, minutes):
     if notification_already_exists(event, minutes):
-        print("Notification already exists for event: " + event.get('summary'))
+        logging.info("Notification already exists for event: " + event.get('summary'))
     else: 
-        print(f"Setting {minutes} minute notification for event: " + event.get('summary'))
+        logging.info(f"Setting {minutes} minute notification for event: " + event.get('summary'))
         event['reminders'] = {'useDefault': False, 'overrides': [{'method': 'popup', 'minutes': minutes}]}
         # update_event(event)
         return True
@@ -171,9 +200,9 @@ def add_notifications(event, minutes_list):
     minutes_set = set(minutes_list)
     for minutes in minutes_set:
         if notification_already_exists(event, minutes):
-            print("Notification already exists for event: " + event.get('summary'))
+            logging.info("Notification already exists for event: " + event.get('summary'))
         else:
-            print(f"Adding {minutes} minute notification for event: " + event.get('summary'))
+            logging.info(f"Adding {minutes} minute notification for event: " + event.get('summary'))
             if event.get('reminders').get('overrides') is None or len(event.get('reminders').get('overrides')) == 0:
                 set_notification(event, minutes)
             else:
@@ -185,11 +214,11 @@ def add_notifications(event, minutes_list):
 # Returns true if an update is made (Meaning a call to update_event will be required to submit the changes)
 def set_color(event, color):
     if color not in COLORS.keys():
-        print(f"Invalid color: {color}")
+        logging.info(f"Invalid color: {color}")
     elif event.get('colorId') == COLORS[color]:
-        print(f"Color already set to {color} for event: {event.get('summary')}")
+        logging.info(f"Color already set to {color} for event: {event.get('summary')}")
     else:
-        print(f"Setting {color} color for event: {event.get('summary')}")
+        logging.info(f"Setting {color} color for event: {event.get('summary')}")
         event['colorId'] = str(COLORS[color])
         # update_event(event)
         return True
@@ -280,7 +309,7 @@ def execute_updates(olympics_calendar):
                 add_notifications(event, [ONE_DAY_NOTIFICATION_TIME, 30])
 
             # Non-Round Robin Curling matches
-            if not bool(re.match(".*(?i)(Round Robin).*", event.get('summary'))):
+            if not bool(re.match("(?i)(.*Round Robin.*)", event.get('summary'))):
                 set_color(event, 'dark blue')
                 add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
 
@@ -302,17 +331,18 @@ def execute_updates(olympics_calendar):
     for event in olympic_events:
         original_event = next(original_event for original_event in original_olympic_events if original_event.get('id') == event.get('id'))
         if events_are_equal(event, original_event):
-            print("Event already up to date: " + event.get('summary'))
+            logging.info("Event already up to date: " + event.get('summary'))
         else: 
             events_to_update.append(event)
 
     updated_events_count = 0
     for event in events_to_update:
-        print("Events left to update: " + str(len(events_to_update) - updated_events_count))
+        logging.info("Events left to update: " + str(len(events_to_update) - updated_events_count))
         update_event(event)
         updated_events_count += 1
         
-    print("Events updated: " + str(updated_events_count))
+    logging.info("Events updated: " + str(updated_events_count))
+    # rename_log_file(updated_events_count)
 
 def delete_unwanted_events(olympic_events):
     events_to_delete = list(filter( lambda event: 
@@ -328,6 +358,14 @@ def delete_unwanted_events(olympic_events):
     return olympic_events
 
 
+def rename_log_file(num_of_updated_events):
+    logging.info("Renaming log file")
+    # TODO: fix this
+    os.rename(
+        LOG_DIR + '/' + LOG_FILENAME, 
+        LOG_DIR + '/' + str(num_of_updated_events) + LOG_FILENAME
+    )
+
 def main():
     # TODO: Remove images from events so the color will always show through
     # Google Calendar API Reference: https://developers.google.com/calendar/api
@@ -340,7 +378,7 @@ def main():
         
 
     except HttpError as error:
-        print('An error occurred: %s' % error)
+        logging.error('An error occurred: %s' % error)
 
 
 if __name__ == '__main__':
