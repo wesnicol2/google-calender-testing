@@ -54,14 +54,16 @@ def setup_logging(log_filepath=LOG_DIR+'/'+LOG_FILENAME):
     if not os.path.exists(os.path.dirname(log_filepath)):
         os.makedirs(os.path.dirname(log_filepath))
 
+    # TODO: Create logger which will send info messages to console and log file and debug messages to console only
     logging.basicConfig(
         level=logging.INFO,
         encoding='utf-8',
         format='%(asctime)s [%(levelname)s]: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
         handlers=[
-            logging.FileHandler(log_filepath),
-            logging.StreamHandler(sys.stdout)
+            # logging.StreamHandler(sys.stdout), # Uncomment this to also print to stdout (not recommended)
+            # TODO: figure out how to have info and debug to console, and just info to log file
+            logging.FileHandler(log_filepath)
         ]
     )
 
@@ -69,7 +71,7 @@ def setup_logging(log_filepath=LOG_DIR+'/'+LOG_FILENAME):
 def setup():
     global service
     setup_logging()
-    logging.info("Setting up Google Calendar API")
+    logging.debug("Setting up Google Calendar API")
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -89,7 +91,7 @@ def setup():
             token.write(creds.to_json())
     service = build('calendar', 'v3', credentials=creds)
     initialize_colors()
-    logging.info("Setup complete")
+    logging.debug("Setup complete")
 
 
 def update_event(event):
@@ -121,14 +123,10 @@ def update_event(event):
         break
     logging.info("Event updated successfully")
 
-def print_calendar_info(calendar):
-    logging.info("Calendar: " + calendar.get('summary') + " (" + calendar.get('id') + ")")
-
 
 def get_events_from_calendar(calendar, start_date=datetime.datetime(2022, 2, 1)):
     id = calendar.get('id')
-    logging.info("Getting events from calendar:")
-    print_calendar_info(calendar)
+    logging.debug("Getting events from calendar:")
     start_date = start_date.isoformat() + 'Z'  # 'Z' indicates UTC time
     events_result = service.events().list(calendarId=id, timeMin=start_date,
                                             maxResults=999, singleEvents=True,
@@ -161,12 +159,12 @@ def remove_events(events):
                 service.events().delete(calendarId=OLYMPIC_CALENDAR_ID, eventId=event.get('id')).execute()
                 logging.info("Removed event: " + event.get('summary'))
     else:
-        logging.info("No events to remove")
+        logging.debug("No events to remove")
 
 # Returns true if an update is made (Meaning a call to update_event will be required to submit the changes)
 def remove_notifications(event):
     if event.get('reminders').get('useDefault') == False:
-        logging.info("Removing notifications for event: " + event.get('summary'))
+        logging.debug("Removing notifications for event: " + event.get('summary'))
         event['reminders'] = {'useDefault': True}   
         # update_event(event)
         return True
@@ -183,9 +181,9 @@ def notification_already_exists(event, minutes):
 
 def set_notification(event, minutes):
     if notification_already_exists(event, minutes):
-        logging.info("Notification already exists for event: " + event.get('summary'))
+        logging.debug("Notification already exists for event: " + event.get('summary'))
     else: 
-        logging.info(f"Setting {minutes} minute notification for event: " + event.get('summary'))
+        logging.debug(f"Setting {minutes} minute notification for event: " + event.get('summary'))
         event['reminders'] = {'useDefault': False, 'overrides': [{'method': 'popup', 'minutes': minutes}]}
         # update_event(event)
         return True
@@ -200,9 +198,9 @@ def add_notifications(event, minutes_list):
     minutes_set = set(minutes_list)
     for minutes in minutes_set:
         if notification_already_exists(event, minutes):
-            logging.info("Notification already exists for event: " + event.get('summary'))
+            logging.debug("Notification already exists for event: " + event.get('summary'))
         else:
-            logging.info(f"Adding {minutes} minute notification for event: " + event.get('summary'))
+            logging.debug(f"Adding {minutes} minute notification for event: " + event.get('summary'))
             if event.get('reminders').get('overrides') is None or len(event.get('reminders').get('overrides')) == 0:
                 set_notification(event, minutes)
             else:
@@ -214,11 +212,11 @@ def add_notifications(event, minutes_list):
 # Returns true if an update is made (Meaning a call to update_event will be required to submit the changes)
 def set_color(event, color):
     if color not in COLORS.keys():
-        logging.info(f"Invalid color: {color}")
+        logging.error(f"Invalid color: {color}")
     elif event.get('colorId') == COLORS[color]:
-        logging.info(f"Color already set to {color} for event: {event.get('summary')}")
+        logging.debug(f"Color already set to {color} for event: {event.get('summary')}")
     else:
-        logging.info(f"Setting {color} color for event: {event.get('summary')}")
+        logging.debug(f"Setting {color} color for event: {event.get('summary')}")
         event['colorId'] = str(COLORS[color])
         # update_event(event)
         return True
@@ -331,7 +329,7 @@ def execute_updates(olympics_calendar):
     for event in olympic_events:
         original_event = next(original_event for original_event in original_olympic_events if original_event.get('id') == event.get('id'))
         if events_are_equal(event, original_event):
-            logging.info("Event already up to date: " + event.get('summary'))
+            logging.debug("Event already up to date: " + event.get('summary'))
         else: 
             events_to_update.append(event)
 
@@ -359,7 +357,7 @@ def delete_unwanted_events(olympic_events):
 
 
 def rename_log_file(num_of_updated_events):
-    logging.info("Renaming log file")
+    logging.debug("Renaming log file")
     # TODO: fix this
     os.rename(
         LOG_DIR + '/' + LOG_FILENAME, 
