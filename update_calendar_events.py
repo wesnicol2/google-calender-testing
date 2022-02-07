@@ -342,6 +342,7 @@ def execute_updates(olympics_calendar):
         updated_events_count += 1
         
     logging.info("Events updated: " + str(updated_events_count))
+    # rename_log_file(updated_events_count)
 
 def delete_unwanted_events(olympic_events):
     events_to_delete = list(filter( lambda event: 
@@ -357,6 +358,14 @@ def delete_unwanted_events(olympic_events):
     return olympic_events
 
 
+def rename_log_file(num_of_updated_events):
+    logging.info("Renaming log file")
+    # TODO: fix this
+    os.rename(
+        LOG_DIR + '/' + LOG_FILENAME, 
+        LOG_DIR + '/' + str(num_of_updated_events) + LOG_FILENAME
+    )
+
 def main():
     # TODO: Remove images from events so the color will always show through
     # Google Calendar API Reference: https://developers.google.com/calendar/api
@@ -369,7 +378,7 @@ def main():
         
 
     except HttpError as error:
-        logging.info('An error occurred: %s' % error)
+        logging.error('An error occurred: %s' % error)
 
 
 if __name__ == '__main__':
