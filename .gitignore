@@ -1,2 +1,4 @@
 credentials/*
 token.json
+logs/*
+log/*
