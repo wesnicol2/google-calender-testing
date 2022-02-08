@@ -370,6 +370,8 @@ def main():
     # Google App Dashboard: https://console.cloud.google.com/apis/dashboard?project=wesnicol-calendar-testing
     setup() # Run setup first
     try:
+        if sys.argv[0] == "exception":
+            raise Exception("Test exception")
         olympics_calendar = get_calendar_by_name('NBC Sports')
         execute_updates(olympics_calendar)
 
