@@ -371,6 +371,7 @@ def main():
     setup() # Run setup first
     try:
         if sys.argv[0] == "exception":
+            print("Test exception initiated")
             raise Exception("Test exception") # TODO: Remove this
         olympics_calendar = get_calendar_by_name('NBC Sports')
         execute_updates(olympics_calendar)
