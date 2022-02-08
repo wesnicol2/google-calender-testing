@@ -1,4 +1,6 @@
 credentials/*
 token.json
+venv/*
 logs/*
 log/*
+archive/*
