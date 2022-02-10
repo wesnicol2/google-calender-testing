@@ -75,7 +75,7 @@ def setup_logging(log_filepath=LOG_DIR+'/'+LOG_FILENAME):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     logger.addHandler(file_handler)
-    # logger.addHandler(console_handler)
+    logger.addHandler(console_handler)
 
 
 
