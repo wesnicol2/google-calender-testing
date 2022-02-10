@@ -23,12 +23,14 @@ service=None
 CREDENTIALS_DIR='./credentials' # TODO: figure out how to make this credentials directory generic if calling this script from somewhere other than script dir
 COLORS = {}
 OLYMPIC_CALENDAR_NAME='NBC Sports'
-STD_NOTIFICATION_TIME = 5
-ONE_DAY_NOTIFICATION_TIME = 1440
 LOG_DATE_FORMAT = '%Y_%m_%d_%H_%M_%S'
 LOG_DIR='./logs'
 LOG_FILENAME = "update_calendar_events_" + datetime.datetime.now().strftime(LOG_DATE_FORMAT) + ".log" # TODO: Rename this log file after processing, prepend it with the number of events that were updated
-
+GOLD_MEDAL_COLOR='yellow'
+USA_COLOR='light blue'
+INTERESTING_EVENT_COLOR = 'green'
+STD_NOTIFICATION_TIME = 5
+ONE_DAY_NOTIFICATION_TIME = 1440
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -301,12 +303,17 @@ def execute_updates(olympics_calendar):
 
         # Gold Medal Events
         if bool(re.match(".*🏅.*", event.get('summary'))):
-            set_color(event, 'yellow')
+            set_color(event, GOLD_MEDAL_COLOR)
             add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
         
         # USA Events
         if bool(re.match(".*USA.*", event.get('summary'))):
-            set_color(event, 'light blue')
+            set_color(event, USA_COLOR)
+            add_notifications(event, STD_NOTIFICATION_TIME)
+
+        # Speed Skating Events
+        if bool(re.match("(?i)(.*Speed Skating.*|.*Short Track.*)", event.get('summary'))):
+            set_color(event, INTERESTING_EVENT_COLOR)
             add_notifications(event, STD_NOTIFICATION_TIME)
 
         # Curling events
@@ -315,19 +322,20 @@ def execute_updates(olympics_calendar):
             if bool(re.match(".*USA.*", event.get('summary'))):
                 add_notifications(event, [ONE_DAY_NOTIFICATION_TIME, 30])
 
-            # Non-Round Robin Curling matches
+            # Non-Round Robin Curling matches (playoffs)
             if not bool(re.match("(?i)(.*Round Robin.*)", event.get('summary'))):
-                set_color(event, 'dark blue')
+                set_color(event, INTERESTING_EVENT_COLOR)
                 add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
 
         # Snowboarding events
         if bool(re.match(".*Snowboarding.*", event.get('summary'))):
-            set_color(event, 'green')
+            set_color(event, INTERESTING_EVENT_COLOR)
 
         # Skiiing events
-        if bool(re.match("(?i)(.*Skiing.*|.*Super-G.*|.*Downhill.*|.*Alpine.*)", event.get('summary'))) or bool(re.match(".*Super G.*", event.get('summary'))):
-            set_color(event, 'green')
-            add_notifications(event, [STD_NOTIFICATION_TIME])
+        if bool(re.match("(?i)(.*Skiing.*|.*Super-G.*|.*Downhill.*|.*Alpine.*)", event.get('summary'))):
+            if not bool(re.match(".*(?i)(Cross-Country Skiing).*", event.get('summary'))): # Exclude Cross-Country Skiing events
+                set_color(event, INTERESTING_EVENT_COLOR)
+                add_notifications(event, [STD_NOTIFICATION_TIME])
 
         # Hockey events 
         if bool(re.match(".*Hockey.*", event.get('summary'))):
