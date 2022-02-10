@@ -392,6 +392,7 @@ def main():
         while True:
             olympics_calendar = get_calendar_by_name('NBC Sports')
             execute_updates(olympics_calendar)
+            sleep(60)
     except Exception as error:
         logging.debug('\n%s' % error)
 
