@@ -165,10 +165,8 @@ def get_calendar_by_name(name):
 def remove_events(events):    
     if len(events) > 0:
         for event in events:
-            user_input = input("Would you like to remove event: " + event.get('summary') + "? (y/n)")
-            if user_input =='y' or user_input == 'Y':
-                service.events().delete(calendarId=OLYMPIC_CALENDAR_ID, eventId=event.get('id')).execute()
-                logging.info("Removed event: " + event.get('summary'))
+            service.events().delete(calendarId=OLYMPIC_CALENDAR_ID, eventId=event.get('id')).execute()
+            logging.info("Removed event: " + event.get('summary'))
     else:
         logging.debug("No events to remove")
 
