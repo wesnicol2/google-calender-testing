@@ -294,8 +294,12 @@ def execute_updates(olympics_calendar):
 
         # Gold Medal Events
         if bool(re.match(".*🏅.*", event.get('summary'))):
-            set_color(event, GOLD_MEDAL_COLOR)
-            add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
+            if bool(re.match("(?i)(.*Qualifiying.*)", event.get('summary'))): # Account for bug in NBC Calendar
+                # remove gold medal emoji from event summary
+                event['summary'] = re.sub(r'🏅', '', event.get('summary'))
+            else:
+                set_color(event, GOLD_MEDAL_COLOR)
+                add_notifications(event, [STD_NOTIFICATION_TIME, ONE_DAY_NOTIFICATION_TIME])
         
         # USA Events
         if bool(re.match(".*USA.*", event.get('summary'))):
@@ -324,7 +328,7 @@ def execute_updates(olympics_calendar):
 
         # Skiiing events
         if bool(re.match("(?i)(.*Skiing.*|.*Super-G.*|.*Downhill.*|.*Alpine.*)", event.get('summary'))):
-            if not bool(re.match(".*(?i)(Cross-Country Skiing).*", event.get('summary'))): # Exclude Cross-Country Skiing events
+            if not bool(re.match("(?i).*(Cross-Country Skiing).*", event.get('summary'))): # Exclude Cross-Country Skiing events
                 set_color(event, INTERESTING_EVENT_COLOR)
                 add_notifications(event, [STD_NOTIFICATION_TIME])
 
