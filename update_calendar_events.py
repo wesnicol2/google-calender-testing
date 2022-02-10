@@ -54,18 +54,27 @@ def setup_logging(log_filepath=LOG_DIR+'/'+LOG_FILENAME):
     if not os.path.exists(os.path.dirname(log_filepath)):
         os.makedirs(os.path.dirname(log_filepath))
 
-    # TODO: Create logger which will send info messages to console and log file and debug messages to console only
-    logging.basicConfig(
-        level=logging.INFO,
-        encoding='utf-8',
-        format='%(asctime)s [%(levelname)s]: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        handlers=[
-            # logging.StreamHandler(sys.stdout), # Uncomment this to also print to stdout (not recommended)
-            # TODO: figure out how to have info and debug to console, and just info to log file
-            logging.FileHandler(log_filepath)
-        ]
-    )
+    format='%(asctime)s [%(levelname)s]: %(message)s'
+    datefmt='%Y/%m/%d %H:%M:%S' # TODO: Change this to %Y-%m-%d %H:%M:%S once it has been confirmed that this format is being used 
+    # Create a logger which will send info and debug messages to console only
+    # Create formatter to be used with both handlers
+    formatter = logging.Formatter(fmt=format, datefmt=datefmt)
+
+    # Create handler for log file and set handler level to INFO
+    file_handler = logging.FileHandler(log_filepath)
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+    # Create handler for console and set handler level to DEBUG
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    console_handler.setFormatter(formatter)
+
+    
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
 
 
 def setup():
@@ -376,10 +385,12 @@ def main():
         olympics_calendar = get_calendar_by_name('NBC Sports')
         execute_updates(olympics_calendar)
 
-        
+    
 
-    except HttpError as error:
+    except Exception as error:
         logging.info('An error occurred: %s' % error)
+
+    
 
 
 if __name__ == '__main__':
