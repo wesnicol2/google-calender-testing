@@ -381,24 +381,17 @@ def rename_log_file(num_of_updated_events):
         LOG_DIR + '/' + str(num_of_updated_events) + LOG_FILENAME
     )
 
+
 def main():
     # TODO: Remove images from events so the color will always show through
     # Google Calendar API Reference: https://developers.google.com/calendar/api
     # Google App Dashboard: https://console.cloud.google.com/apis/dashboard?project=wesnicol-calendar-testing
-    setup() # Run setup first
     try:
-        if sys.argv[0] == "exception":
-            logging.info("Test exception initiated")
-            raise Exception("Test exception") # TODO: Remove this
+        setup() # Run setup first
         olympics_calendar = get_calendar_by_name('NBC Sports')
         execute_updates(olympics_calendar)
-
-    
-
     except Exception as error:
-        logging.info('An error occurred: %s' % error)
-
-    
+        logging.exception('\n%s' % error)
 
 
 if __name__ == '__main__':
