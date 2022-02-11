@@ -126,8 +126,9 @@ def execute_updates(olympics_calendar):
 
         # Gold Medal Events
         if bool(re.match(".*🏅.*", event.get('summary'))):
-            print("not yet implemented")
-            set_color_all(500, MAX_VALUE)
+            # If event is currently happening, set light color
+            if event.get('start').get('dateTime') < datetime.datetime.now().isoformat() + 'Z' and event.get('end').get('dateTime') > datetime.datetime.now().isoformat() + 'Z':
+                set_color_all(500, MAX_VALUE)
 
 def delete_unwanted_events(olympic_events):
     events_to_delete = list(filter( lambda event: 
