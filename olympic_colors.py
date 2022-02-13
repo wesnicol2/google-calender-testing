@@ -1,5 +1,6 @@
 from __future__ import print_function
 import re
+import time
 import datetime
 import os.path
 import logging
@@ -131,6 +132,7 @@ def main():
         while True:
             olympics_calendar = get_calendar_by_name('NBC Sports')
             execute_updates(olympics_calendar)
+            time.sleep(60)
     except Exception as error:
         logging.exception('\n%s' % error)
 
