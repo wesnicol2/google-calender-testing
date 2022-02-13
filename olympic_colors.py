@@ -1,12 +1,7 @@
 from __future__ import print_function
-from time import sleep
-import math
-import random
 import re
 import datetime
 import os.path
-import copy
-import json
 import logging
 import sys
 import codecs
@@ -28,7 +23,7 @@ APP_NAME = "olympic_colors"
 OLYMPIC_CALENDAR_NAME='NBC Sports'
 LOG_DATE_FORMAT = '%Y_%m_%d_%H_%M_%S'
 LOG_DIR='./logs'
-LOG_FILENAME = f"{APP_NAME}" + datetime.datetime.now().strftime(LOG_DATE_FORMAT) + ".log" 
+LOG_FILENAME = f"{APP_NAME}" + datetime.now().strftime(LOG_DATE_FORMAT) + ".log" 
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -87,7 +82,7 @@ def setup():
     logging.debug("Setup complete")
 
 
-def get_events_from_calendar(calendar, start_date=datetime.datetime(2022, 2, 1)):
+def get_events_from_calendar(calendar, start_date=datetime(2022, 2, 1)):
     id = calendar.get('id')
     logging.debug("Getting events from calendar:")
     start_date = start_date.isoformat() + 'Z'  # 'Z' indicates UTC time
@@ -117,39 +112,14 @@ def get_calendar_by_name(name):
 
 def execute_updates(olympics_calendar):
     olympic_events = get_events_from_calendar(olympics_calendar)
-    olympic_events = delete_unwanted_events(olympic_events)
-
     for event in olympic_events:
-        # Set all events to least importance. Notifications and color will be added to specific events with if statements
-        # TODO: Figure out how to remove notifications from everything but what has notifications added so that all those with notifications will not be marked for update if they start with notifications
 
-
+        # Only address events which are currently happening
+        if event.get('start').get('dateTime') < datetime.now().isoformat() + 'Z' and event.get('end').get('dateTime') > datetime.now().isoformat() + 'Z':
         # Gold Medal Events
-        if bool(re.match(".*🏅.*", event.get('summary'))):
-            # If event is currently happening, set light color
-            if event.get('start').get('dateTime') < datetime.datetime.now().isoformat() + 'Z' and event.get('end').get('dateTime') > datetime.datetime.now().isoformat() + 'Z':
-                set_color_all(500, MAX_VALUE)
-
-def delete_unwanted_events(olympic_events):
-    events_to_delete = list(filter( lambda event: 
-        'Re-Air' in event.get('summary') or 
-        're-air' in event.get('summary') or 
-        'Re-air' in event.get('summary') or
-        re.match(".*Success! You're connected to NBC Olympics.*", event.get('summary')) or
-        re.match(".*The 2022 Olympic Winter Games are here!️.*", event.get('summary')), 
-    olympic_events))
-    
-    olympic_events = [event for event in olympic_events if event not in events_to_delete]
-    return olympic_events
-
-
-def rename_log_file(num_of_updated_events):
-    logging.debug("Renaming log file")
-    # TODO: fix this
-    os.rename(
-        LOG_DIR + '/' + LOG_FILENAME, 
-        LOG_DIR + '/' + str(num_of_updated_events) + LOG_FILENAME
-    )
+            if bool(re.match(".*🏅.*", event.get('summary'))):
+                # If event is currently happening, set light color
+                set_color_all(LIFX_COLORS['gold'], MAX_VALUE * 0.5)   
 
 
 def main():
