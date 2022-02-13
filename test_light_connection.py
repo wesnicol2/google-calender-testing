@@ -156,11 +156,11 @@ def main():
     # TODO: Remove images from events so the color will always show through
     # Google Calendar API Reference: https://developers.google.com/calendar/api
     # Google App Dashboard: https://console.cloud.google.com/apis/dashboard?project=wesnicol-calendar-testing
-    print("Turning light off")
+    logging.debug("Turning light off")
     set_color_all(500, 0)
     sleep(5)
 
-    print("Turning light on")
+    logging.debug("Turning light on")
     set_color_all(500)
 
     
