@@ -139,7 +139,7 @@ def main():
     while True:
         logging.debug("Turning light off")
         set_color_all(500, 0)
-        hue = input("Enter a number between 0-360 representing the hue of the light: ")
+        hue = int(input("Enter a number between 0-360 representing the hue of the light: "))
         uint16_hue = int(round(0x10000 * hue) / 360) % 0x10000
         logging.debug("Turning light on")
         set_color_all(500)
