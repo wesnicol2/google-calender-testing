@@ -130,39 +130,20 @@ def execute_updates(olympics_calendar):
             if event.get('start').get('dateTime') < datetime.now().isoformat() + 'Z' and event.get('end').get('dateTime') > datetime.now().isoformat() + 'Z':
                 set_color_all(500, MAX_VALUE)
 
-def delete_unwanted_events(olympic_events):
-    events_to_delete = list(filter( lambda event: 
-        'Re-Air' in event.get('summary') or 
-        're-air' in event.get('summary') or 
-        'Re-air' in event.get('summary') or
-        re.match(".*Success! You're connected to NBC Olympics.*", event.get('summary')) or
-        re.match(".*The 2022 Olympic Winter Games are here!️.*", event.get('summary')), 
-    olympic_events))
-    
-    olympic_events = [event for event in olympic_events if event not in events_to_delete]
-    return olympic_events
-
-
-def rename_log_file(num_of_updated_events):
-    logging.debug("Renaming log file")
-    # TODO: fix this
-    os.rename(
-        LOG_DIR + '/' + LOG_FILENAME, 
-        LOG_DIR + '/' + str(num_of_updated_events) + LOG_FILENAME
-    )
-
 
 def main():
+    setup()
     # TODO: Remove images from events so the color will always show through
     # Google Calendar API Reference: https://developers.google.com/calendar/api
     # Google App Dashboard: https://console.cloud.google.com/apis/dashboard?project=wesnicol-calendar-testing
-    logging.debug("Turning light off")
-    set_color_all(500, 0)
-    sleep(5)
-
-    logging.debug("Turning light on")
-    set_color_all(500)
-
+    while True:
+        logging.debug("Turning light off")
+        set_color_all(500, 0)
+        hue = input("Enter a number between 0-360 representing the hue of the light: ")
+        uint16_hue = int(round(0x10000 * hue) / 360) % 0x10000
+        logging.debug("Turning light on")
+        set_color_all(500)
+        sleep(5)
     
 
 if __name__ == '__main__':
