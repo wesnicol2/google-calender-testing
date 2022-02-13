@@ -138,12 +138,10 @@ def main():
     # Google App Dashboard: https://console.cloud.google.com/apis/dashboard?project=wesnicol-calendar-testing
     while True:
         logging.debug("Turning light off")
-        set_color_all(500, 0)
         hue = int(input("Enter a number between 0-360 representing the hue of the light: "))
         uint16_hue = int(round(0x10000 * hue) / 360) % 0x10000
         logging.debug("Turning light on")
-        set_color_all(500)
-        sleep(5)
+        set_color_all(uint16_hue)
     
 
 if __name__ == '__main__':
