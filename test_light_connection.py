@@ -128,7 +128,7 @@ def execute_updates(olympics_calendar):
         if bool(re.match(".*🏅.*", event.get('summary'))):
             # If event is currently happening, set light color
             if event.get('start').get('dateTime') < datetime.now().isoformat() + 'Z' and event.get('end').get('dateTime') > datetime.now().isoformat() + 'Z':
-                set_color_all(500, MAX_VALUE)
+                set_color_all(LIFX_COLORS['gold'], MAX_VALUE / 2)
 
 
 def main():
@@ -138,10 +138,9 @@ def main():
     # Google App Dashboard: https://console.cloud.google.com/apis/dashboard?project=wesnicol-calendar-testing
     while True:
         logging.debug("Turning light off")
-        hue = int(input("Enter a number between 0-360 representing the hue of the light: "))
-        uint16_hue = int(round(0x10000 * hue) / 360) % 0x10000
+        color = input("Enter a color: ")
         logging.debug("Turning light on")
-        set_color_all(uint16_hue)
+        set_color_all(LIFX_COLORS[color], MAX_VALUE * 0.75)
     
 
 if __name__ == '__main__':
