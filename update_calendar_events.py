@@ -384,10 +384,13 @@ def main():
     # TODO: Remove images from events so the color will always show through
     # Google Calendar API Reference: https://developers.google.com/calendar/api
     # Google App Dashboard: https://console.cloud.google.com/apis/dashboard?project=wesnicol-calendar-testing
+    
     try:
         setup() # Run setup first
-        olympics_calendar = get_calendar_by_name('NBC Sports')
-        execute_updates(olympics_calendar)
+        while True:
+            olympics_calendar = get_calendar_by_name('NBC Sports')
+            execute_updates(olympics_calendar)
+            sleep(60)
     except Exception as error:
         logging.exception('\n%s' % error)
 
