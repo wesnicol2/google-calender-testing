@@ -87,7 +87,7 @@ def setup():
     logging.debug("Setup complete")
 
 
-def get_events_from_calendar(calendar, start_date=datetime.datetime(2022, 2, 1)):
+def get_events_from_calendar(calendar, start_date=datetime(2022, 2, 1)):
     id = calendar.get('id')
     logging.debug("Getting events from calendar:")
     start_date = start_date.isoformat() + 'Z'  # 'Z' indicates UTC time
@@ -127,7 +127,7 @@ def execute_updates(olympics_calendar):
         # Gold Medal Events
         if bool(re.match(".*🏅.*", event.get('summary'))):
             # If event is currently happening, set light color
-            if event.get('start').get('dateTime') < datetime.datetime.now().isoformat() + 'Z' and event.get('end').get('dateTime') > datetime.datetime.now().isoformat() + 'Z':
+            if event.get('start').get('dateTime') < datetime.now().isoformat() + 'Z' and event.get('end').get('dateTime') > datetime.now().isoformat() + 'Z':
                 set_color_all(500, MAX_VALUE)
 
 def delete_unwanted_events(olympic_events):
