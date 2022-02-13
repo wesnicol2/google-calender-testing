@@ -392,7 +392,7 @@ def main():
             execute_updates(olympics_calendar)
             sleep(60)
     except Exception as error:
-        logging.debug('\n%s' % error)
+        logging.exception('\n%s' % error)
 
 
 if __name__ == '__main__':
