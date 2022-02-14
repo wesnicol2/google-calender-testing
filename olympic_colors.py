@@ -115,7 +115,6 @@ def execute_updates(olympics_calendar):
     olympic_events = get_events_from_calendar(olympics_calendar)
     logging.debug("Checking for events currently happening")
     active_event = False
-    interesting_active_event = False
     for event in olympic_events:
         # Only address events which are currently happening
         now = datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
@@ -125,18 +124,16 @@ def execute_updates(olympics_calendar):
             logging.debug(f"Event {event.get('summary')} is currently happening")
             active_event = True
             # USA events
-            if bool(re.xmatch(".*USA.*", event.get('summary'))):
+            if bool(re.match(".*USA.*", event.get('summary'))):
                 # If event is currently happening, set light color
                 logging.info("Setting light color to blue")
                 set_color_all(LIFX_COLORS['blue'], MAX_VALUE * 0.75)
-                interesting_active_event = True
 
             # Gold Medal Events
             if bool(re.match(".*🏅.*", event.get('summary'))):
                 # If event is currently happening, set light color
                 logging.info("Setting light color to gold")
                 set_color_all(LIFX_COLORS['gold'], MAX_VALUE * 0.75)
-                interesting_active_event = True
 
         if not interesting_active_event:
             if not active_event:
@@ -145,6 +142,8 @@ def execute_updates(olympics_calendar):
             else:
                 logging.info("Non-interesting event currently on. Setting light color to green")
                 set_color_all(LIFX_COLORS['green'], MAX_VALUE * 0.25)
+
+    return active_event
         
 
 
@@ -156,9 +155,13 @@ def main():
         setup() # Run setup first
         while True:
             olympics_calendar = get_calendar_by_name('NBC Sports')
-            sleep(30)
-            execute_updates(olympics_calendar)
-            sleep(30)
+            if execute_updates(olympics_calendar):
+                # Turn light on
+                set_color_all(LIFX_COLORS['green'], MAX_VALUE * 0.25)
+            else:
+                # Turn lighs off
+                set_color_all(LIFX_COLORS['red'], 0)
+            sleep(60)
     except Exception as error:
         logging.exception('\n%s' % error)
 
