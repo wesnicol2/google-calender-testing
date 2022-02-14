@@ -140,6 +140,7 @@ def execute_updates(olympics_calendar):
 
             # No important events, but still some event happening, turn on lights
             set_color_all(LIFX_COLORS['green'], MAX_VALUE * 0.25)
+            logging.info("Some event happening, setting light color to green")
             return True
 
     return False
@@ -156,6 +157,7 @@ def main():
             olympics_calendar = get_calendar_by_name('NBC Sports')
             if not execute_updates(olympics_calendar):
                 # Turn lighs off
+                logging.info("No events happening, turning lights off")
                 set_color_all(LIFX_COLORS['red'], 0)
             sleep(60)
     except Exception as error:
