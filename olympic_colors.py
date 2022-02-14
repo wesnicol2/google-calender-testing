@@ -135,14 +135,6 @@ def execute_updates(olympics_calendar):
                 logging.info("Setting light color to gold")
                 set_color_all(LIFX_COLORS['gold'], MAX_VALUE * 0.75)
 
-        if not interesting_active_event:
-            if not active_event:
-                logging.info("No events currently on. Turning off lights")
-                set_color_all(LIFX_COLORS['red'], 0)
-            else:
-                logging.info("Non-interesting event currently on. Setting light color to green")
-                set_color_all(LIFX_COLORS['green'], MAX_VALUE * 0.25)
-
     return active_event
         
 
