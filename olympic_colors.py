@@ -115,33 +115,37 @@ def execute_updates(olympics_calendar):
     olympic_events = get_events_from_calendar(olympics_calendar)
     logging.debug("Checking for events currently happening")
     active_event = False
+    interesting_active_event = False
     for event in olympic_events:
-
         # Only address events which are currently happening
         now = datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
         start_time = event.get('start').get('dateTime')
         end_time = event.get('end').get('dateTime')
         if start_time < now and end_time > now:
             logging.debug(f"Event {event.get('summary')} is currently happening")
+            active_event = True
             # USA events
             if bool(re.match(".*USA.*", event.get('summary'))):
                 # If event is currently happening, set light color
                 logging.info("Setting light color to blue")
                 set_color_all(LIFX_COLORS['blue'], MAX_VALUE * 0.75)
-                active_event = True
+                interesting_active_event = True
 
             # Gold Medal Events
             if bool(re.match(".*🏅.*", event.get('summary'))):
                 # If event is currently happening, set light color
                 logging.info("Setting light color to gold")
                 set_color_all(LIFX_COLORS['gold'], MAX_VALUE * 0.75)
-                active_event = True
+                interesting_active_event = True
 
+        if not interesting_active_event:
+            if not active_event:
+                logging.info("No events currently on. Turning off lights")
+                set_color_all(LIFX_COLORS['red'], 0)
+            else:
+                logging.info("Non-interesting event currently on. Setting light color to green")
+                set_color_all(LIFX_COLORS['green'], MAX_VALUE * 0.25)
         
-        # Turns lights off if no active event
-        if not active_event:
-            logging.info("Turning off lights")
-            set_color_all(LIFX_COLORS['red'], 0)
 
 
 def main():
