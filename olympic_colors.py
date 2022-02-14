@@ -123,19 +123,26 @@ def execute_updates(olympics_calendar):
         if start_time < now and end_time > now:
             logging.debug(f"Event {event.get('summary')} is currently happening")
             active_event = True
-            # USA events
-            if bool(re.match(".*USA.*", event.get('summary'))):
-                # If event is currently happening, set light color
-                logging.info("Setting light color to blue")
-                set_color_all(LIFX_COLORS['blue'], MAX_VALUE * 0.75)
 
             # Gold Medal Events
             if bool(re.match(".*🏅.*", event.get('summary'))):
                 # If event is currently happening, set light color
                 logging.info("Setting light color to gold")
                 set_color_all(LIFX_COLORS['gold'], MAX_VALUE * 0.75)
+                return True
 
-    return active_event
+            # USA events
+            if bool(re.match(".*USA.*", event.get('summary'))):
+                # If event is currently happening, set light color
+                logging.info("Setting light color to blue")
+                set_color_all(LIFX_COLORS['blue'], MAX_VALUE * 0.75)
+                return True
+
+            # No important events, but still some event happening, turn on lights
+            set_color_all(LIFX_COLORS['green'], MAX_VALUE * 0.25)
+            return True
+
+    return False
         
 
 
@@ -147,10 +154,7 @@ def main():
         setup() # Run setup first
         while True:
             olympics_calendar = get_calendar_by_name('NBC Sports')
-            if execute_updates(olympics_calendar):
-                # Turn light on
-                set_color_all(LIFX_COLORS['green'], MAX_VALUE * 0.25)
-            else:
+            if not execute_updates(olympics_calendar):
                 # Turn lighs off
                 set_color_all(LIFX_COLORS['red'], 0)
             sleep(60)
