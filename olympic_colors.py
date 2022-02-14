@@ -125,7 +125,7 @@ def execute_updates(olympics_calendar):
             logging.debug(f"Event {event.get('summary')} is currently happening")
             active_event = True
             # USA events
-            if bool(re.match(".*USA.*", event.get('summary'))):
+            if bool(re.xmatch(".*USA.*", event.get('summary'))):
                 # If event is currently happening, set light color
                 logging.info("Setting light color to blue")
                 set_color_all(LIFX_COLORS['blue'], MAX_VALUE * 0.75)
@@ -156,8 +156,9 @@ def main():
         setup() # Run setup first
         while True:
             olympics_calendar = get_calendar_by_name('NBC Sports')
+            sleep(30)
             execute_updates(olympics_calendar)
-            sleep(60)
+            sleep(30)
     except Exception as error:
         logging.exception('\n%s' % error)
 
