@@ -117,12 +117,19 @@ def execute_updates(olympics_calendar):
 
         # Only address events which are currently happening
         if event.get('start').get('dateTime') < datetime.now().isoformat() + 'Z' and event.get('end').get('dateTime') > datetime.now().isoformat() + 'Z':
-        # Gold Medal Events
+            # USA events
+            if bool(re.match(".*USA.*", event.get('summary'))):
+                # If event is currently happening, set light color
+                logging.info("Setting light color to blue")
+                set_color_all(LIFX_COLORS['blue'], MAX_VALUE * 0.75)
+
+            # Gold Medal Events
             if bool(re.match(".*🏅.*", event.get('summary'))):
                 # If event is currently happening, set light color
-                set_color_all(LIFX_COLORS['gold'], MAX_VALUE * 0.5)   
+                logging.info("Setting light color to gold")
+                set_color_all(LIFX_COLORS['gold'], MAX_VALUE * 0.75)
 
-
+                
 def main():
     # TODO: Remove images from events so the color will always show through
     # Google Calendar API Reference: https://developers.google.com/calendar/api
