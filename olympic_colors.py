@@ -120,9 +120,6 @@ def execute_updates(olympics_calendar):
         now = datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
         start_time = event.get('start').get('dateTime')
         end_time = event.get('end').get('dateTime')
-        logging.debug("Event start time:\t\t%s", start_time) # TODO: Remove
-        logging.debug("Event end time:\t\t%s", end_time) # TODO: Remove
-        logging.debug("Current time:\t\t%s", now) # TODO: Remove
         if start_time < now and end_time > now:
             logging.debug(f"Event {event.get('summary')} is currently happening")
             # USA events
